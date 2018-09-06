@@ -93,7 +93,7 @@
             
               <li class="archive-list-container">
                 <a href="javascript:;">Archive</a>
-                <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/">2018</a><span class="archive-list-count">1</span></li></ul>
+                <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/">2018</a><span class="archive-list-count">2</span></li></ul>
               </li>
             
           
@@ -132,7 +132,58 @@
 
     <div class="post-list-item article">
       <h3 class="article-header">
-        <a href="/2018/09/06/javaScript-tips-js-消抖（debounce）与节流（throttle）/" >
+        <a href="/2018/09/06/javaScript tips——谈谈数组乱序/" >
+  javaScript tips——谈谈数组乱序
+</a>
+
+      </h3>
+      
+
+      <div class="article-info">
+        <a href="/2018/09/06/javaScript tips——谈谈数组乱序/"><span class="article-date">
+  2018-09-06
+</span>
+</a>
+        
+
+        
+
+      </div>
+      <div class="article-entry">
+        
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>先看一个段代码</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">randArr</span> (<span class="params">arr</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> arr.sort(<span class="function"><span class="params">()</span> =&gt;</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> (<span class="built_in">Math</span>.random() - <span class="number">0.5</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>目的是为了实现给定数组的乱序。<br>利用数组的sort方法，判断随机出来的0~1的值与0.5的大小，实现伪排序。<br>为什么说是伪排序呢？代码的逻辑没毛病啊。<br>对，从这个层面来看，简单明了，完美的实现了需求，本着凡事往祖坟刨得精神。来看看这段代码的内部实现。</p>
+<h2 id="浏览器实现"><a href="#浏览器实现" class="headerlink" title="浏览器实现"></a>浏览器实现</h2><h3 id="ECMA-Script"><a href="#ECMA-Script" class="headerlink" title="ECMA Script"></a>ECMA Script</h3><blockquote>
+<p>The elements of this array are sorted. The sort is not necessarily stable (that is, elements that compare equal do not necessarily remain in their original order). If comparefn is not undefined, it should be a function that accepts two arguments x and y and returns a negative value if x &lt; y, zero if x = y, or a positive value if x &gt; y.</p>
+</blockquote>
+<p>大致说的意思是，我不管你排序的算法稳不稳定，反正你能给用户自定义排序规则就行，不给你就爱咋折腾咋折腾~<br>这帮浏览器一听，好啊，老大发话了，那就八仙过海各显神通，各自都认为自己的实现是最牛逼的。</p>
+<h3 id="Chrome的sort"><a href="#Chrome的sort" class="headerlink" title="Chrome的sort"></a>Chrome的sort</h3><p>基于V8引擎，它的排序算进行了很多的优化，但是核心是小于等于10的数组用插入排序（稳定），大于10的采用了quickSort（不稳定），<a href="https://link.juejin.im?target" target="_blank" rel="noopener">源码</a>。</p>
+<h3 id="FireFox的sort"><a href="#FireFox的sort" class="headerlink" title="FireFox的sort"></a>FireFox的sort</h3><p>基于SpiderMonkey引擎，采用了归并排序（稳定）， <a href="https://link.juejin.im?target" target="_blank" rel="noopener">源码</a></p>
+<h3 id="Safari的sort"><a href="#Safari的sort" class="headerlink" title="Safari的sort"></a>Safari的sort</h3><p>基于Nitro（JavaScriptCore ）引擎，如果没有自定义的排序规则传入，采用桶排序（不一定稳定， 桶排序的稳定性取决于桶内排序的稳定性, 因此其稳定性不确定。），传入自定义规则，采用归并排序（稳定），<a href="https://link.juejin.im?target" target="_blank" rel="noopener">源码</a></p>
+<h3 id="Microsoft-Edge-IE9"><a href="#Microsoft-Edge-IE9" class="headerlink" title="Microsoft Edge/IE9+"></a>Microsoft Edge/IE9+</h3><p>基于Chakra引擎，采用快排（不稳定）<a href="https://link.juejin.im?target" target="_blank" rel="noopener">源码</a></p>
+<p>好了，那个说sort可以不是伪排序的同学，你看见我这40米的大刀没？<br><img src="https://user-gold-cdn.xitu.io/2018/1/24/161270e19ba7b83f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="image | center"></p>
+<p>什么，你还嘴硬，我喜欢你的性格，看下面：<br>github上的大神对  var letters = [‘A’,’B’,’C’,’D’,’E’,‘F’,‘G’,’H’,’I’,’J’]；<br>进行了10000次乱序处理，发现结论： <strong>元素大概率停留在自己的初始位置。</strong><br>具体地址： <a href="https://link.juejin.im?target" target="_blank" rel="noopener">HOUCe/shuffle-array</a><br><img src="https://user-gold-cdn.xitu.io/2018/1/24/161270e19bbbfe0b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="image | center"></p>
+<p> 看见没，矮要承认，挨打要立正。<br><img src="https://user-gold-cdn.xitu.io/2018/1/24/161270e19bc17265?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="image | center"></p>
+<h2 id="洗牌算法（Fisher-Yates）"><a href="#洗牌算法（Fisher-Yates）" class="headerlink" title="洗牌算法（Fisher-Yates）"></a>洗牌算法（Fisher-Yates）</h2><p>想要实现真正意义上的乱序，我们来研究一下：只要满足每个元素出现在各个位置的概率同等即可。<br>少年，听过如来神掌吗？<br>有个<a href="https://link.juejin.im?target" target="_blank" rel="noopener">Fisher-Yates</a>的洗牌算法，满足您的各种乱序需求，物美价廉，杀人越货居家旅行的必备精品~（其实有三个版本，有兴趣的自行搜索）<br>算法的大致描述<br>1.找到数组的屁股（最后一个元素）；<br>2.在脑袋和屁股中间随机一个位置；<br>3.交换元素；<br>4.这时屁股是已经乱序后的元素，所以屁股前移；<br>5.如果屁股没打到脑袋上就继续1~4的步骤<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">shuffle</span>(<span class="params">arr</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> length = arr.length,</span><br><span class="line">        r      = length,</span><br><span class="line">        rand   = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (r) &#123;</span><br><span class="line">        rand = <span class="built_in">Math</span>.floor(<span class="built_in">Math</span>.random() * r--);</span><br><span class="line">        [arr[r], arr[rand]] = [arr[rand], arr[r]];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> arr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://link.juejin.im?target" target="_blank" rel="noopener"><a href="http://github.com/HOUCe/shuff%E2%80%A6" target="_blank" rel="noopener">github.com/HOUCe/shuff…</a></a><br><a href="https://link.juejin.im?target" target="_blank" rel="noopener"><a href="http://en.wikipedia.org/wiki/Fisher%E2%80%A6" target="_blank" rel="noopener">en.wikipedia.org/wiki/Fisher…</a></a><br><a href="https://link.juejin.im?target" target="_blank" rel="noopener"><a href="http://efe.baidu.com/blog/talk-a%E2%80%A6" target="_blank" rel="noopener">efe.baidu.com/blog/talk-a…</a></a><br><a href="https://link.juejin.im?target" target="_blank" rel="noopener"><a href="http://segmentfault.com/a/119000001%E2%80%A6" target="_blank" rel="noopener">segmentfault.com/a/119000001…</a></a></p>
+
+        
+      </div>
+    </div>
+
+  
+    </div>
+  
+
+  
+  
+    <div class="post-list">
+  
+
+    <div class="post-list-item article">
+      <h3 class="article-header">
+        <a href="/2018/09/06/javaScript tips——消抖（debounce）与节流（throttle）/" >
   javaScript-tips: js 消抖（debounce）与节流（throttle）
 </a>
 
@@ -140,7 +191,7 @@
       
 
       <div class="article-info">
-        <a href="/2018/09/06/javaScript-tips-js-消抖（debounce）与节流（throttle）/"><span class="article-date">
+        <a href="/2018/09/06/javaScript tips——消抖（debounce）与节流（throttle）/"><span class="article-date">
   2018-09-06
 </span>
 </a>
