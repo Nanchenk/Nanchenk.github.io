@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-cn">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="javaScript," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言在项目中经常会遇到下载或导出服务端资源的需求，一般分为2种做法  获取文件流，编码后下载 获取文件的url，直接下载本文主要探讨第二种方法，在最后会提及文件流的方法。  浏览器的安全策略在介绍方法之前，我们需要知道浏览器的一些安全机制，防止恶意代码对用户的破坏。现代浏览器（ie8除外）检测到非用户直接操作产生的新窗口，一般会阻止，比如在ajax的回调中打开新的窗口，因为这些操作并不是在用户点击">
+<meta name="keywords" content="javaScript">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JavaScript tips——关于下载的二三事">
+<meta property="og:url" content="https://nanchenk.github.io/2018/09/06/javaScript tips——关于下载的二三事/index.html">
+<meta property="og:site_name" content="噬己心以驽吾翼">
+<meta property="og:description" content="前言在项目中经常会遇到下载或导出服务端资源的需求，一般分为2种做法  获取文件流，编码后下载 获取文件的url，直接下载本文主要探讨第二种方法，在最后会提及文件流的方法。  浏览器的安全策略在介绍方法之前，我们需要知道浏览器的一些安全机制，防止恶意代码对用户的破坏。现代浏览器（ie8除外）检测到非用户直接操作产生的新窗口，一般会阻止，比如在ajax的回调中打开新的窗口，因为这些操作并不是在用户点击">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529033481407-eb00f8da-bdf5-44f0-9a70-d3e96f1e92f2.png">
+<meta property="og:updated_time" content="2018-09-06T14:34:36.912Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JavaScript tips——关于下载的二三事">
+<meta name="twitter:description" content="前言在项目中经常会遇到下载或导出服务端资源的需求，一般分为2种做法  获取文件流，编码后下载 获取文件的url，直接下载本文主要探讨第二种方法，在最后会提及文件流的方法。  浏览器的安全策略在介绍方法之前，我们需要知道浏览器的一些安全机制，防止恶意代码对用户的破坏。现代浏览器（ie8除外）检测到非用户直接操作产生的新窗口，一般会阻止，比如在ajax的回调中打开新的窗口，因为这些操作并不是在用户点击">
+<meta name="twitter:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529033481407-eb00f8da-bdf5-44f0-9a70-d3e96f1e92f2.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://nanchenk.github.io/2018/09/06/javaScript tips——关于下载的二三事/"/>
+
+
+
+
+
+  <title>JavaScript tips——关于下载的二三事 | 噬己心以驽吾翼</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-cn">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">噬己心以驽吾翼</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://nanchenk.github.io/2018/09/06/javaScript tips——关于下载的二三事/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Nanchen">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="噬己心以驽吾翼">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">JavaScript tips——关于下载的二三事</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-06T22:34:00+08:00">
+                2018-09-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/09/06/javaScript tips——关于下载的二三事/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2018/09/06/javaScript tips——关于下载的二三事/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在项目中经常会遇到下载或导出服务端资源的需求，一般分为2种做法</p>
+<ol>
+<li>获取文件流，编码后下载</li>
+<li>获取文件的url，直接下载<br>本文主要探讨第二种方法，在最后会提及文件流的方法。</li>
+</ol>
+<h1 id="浏览器的安全策略"><a href="#浏览器的安全策略" class="headerlink" title="浏览器的安全策略"></a>浏览器的安全策略</h1><p>在介绍方法之前，我们需要知道浏览器的一些安全机制，防止恶意代码对用户的破坏。<br>现代浏览器（ie8除外）检测到非用户直接操作产生的新窗口，一般会阻止，比如在ajax的回调中打开<span data-type="color" style="color:#FA8C16">新的窗口</span>，因为这些操作并不是在用户点击的线程中，所以会拦截。</p>
+<h1 id="预开新标签页"><a href="#预开新标签页" class="headerlink" title="预开新标签页"></a>预开新标签页</h1><h2 id="做法"><a href="#做法" class="headerlink" title="做法"></a>做法</h2><ol>
+<li>在异步操作之前，先打开一个新标签页</li>
+<li>请求后端资源的地址</li>
+<li>获取url后去修改空白页的url<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> downloadTab = <span class="built_in">window</span>.open(<span class="string">'about:blank'</span>);</span><br><span class="line"></span><br><span class="line">ajax.get(<span class="string">'xxx'</span>).then(<span class="function"><span class="params">url</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">// 使用后端资源的url进行下载</span></span><br><span class="line">    downloadTab.location.href = href;</span><br><span class="line">&#125;).catch(<span class="function"><span class="params">err</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">// 处理异常</span></span><br><span class="line">    downloadTab.close();</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><ol>
+<li>不管请求成功还是失败都会有新页面的闪烁出现</li>
+<li>打开的新页面在什么时候关闭是个问题，因为如果请求时间过长，用户可能自己关闭新页面，更不好处理的情况是页面什么时候触发了下载，因为如果只是更改url就关闭窗口可能还没有开始下载的操作。</li>
+</ol>
+<h1 id="生成iframe"><a href="#生成iframe" class="headerlink" title="生成iframe"></a>生成iframe</h1><h2 id="做法-1"><a href="#做法-1" class="headerlink" title="做法"></a>做法</h2><p>为了避免页面闪烁与关闭时机的问题，可以在当前页面使用动态创建iframe的方式，直接下载</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">ajax.get(<span class="string">'xxx'</span>).then(<span class="function"><span class="params">href</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!href) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.downIframe) &#123;</span><br><span class="line">      <span class="keyword">this</span>.downIframe = <span class="built_in">document</span>.createElement(<span class="string">'iframe'</span>); <span class="comment">// 动态创建iframe</span></span><br><span class="line">      <span class="keyword">this</span>.downIframe.src = href; <span class="comment">// iframe 中加载的页面</span></span><br><span class="line">      <span class="keyword">this</span>.downIframe.id = <span class="string">'downloadIframe'</span>; <span class="comment">// iframe 中加载的页面</span></span><br><span class="line">      <span class="keyword">this</span>.downIframe.style.width = <span class="string">'1px'</span>;</span><br><span class="line">      <span class="keyword">this</span>.downIframe.style.height = <span class="string">'1px'</span>;</span><br><span class="line">      <span class="keyword">this</span>.downIframe.style.position = <span class="string">'absolute'</span>;</span><br><span class="line">      <span class="keyword">this</span>.downIframe.style.left = <span class="string">'-100px'</span>;</span><br><span class="line">      <span class="built_in">document</span>.body.appendChild(<span class="keyword">this</span>.downIframe); <span class="comment">// 添加到当前窗体</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.downIframe.src = href; <span class="comment">// iframe 中加载的页面</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;).catch(<span class="function"><span class="params">err</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">// 处理异常</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h2 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h2><p>虽然可以优雅的下载文件了，可是如果需要定制下载文件的名称就会令人头疼了，我们需要时机去改变下载文件的名称，否则就会使服务端的文件名称。</p>
+<h2 id="生成标签"><a href="#生成标签" class="headerlink" title="生成标签"></a>生成<a>标签</a></h2><p>利用download属性设置文件名，</p>
+<p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529033481407-eb00f8da-bdf5-44f0-9a70-d3e96f1e92f2.png" alt="image.png | left | 747x486"></p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">ajax.get(<span class="string">'xxx'</span>).then(<span class="function"><span class="params">href</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!href) &#123;</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> a = <span class="built_in">document</span>.createElement(<span class="string">'a'</span>);</span><br><span class="line">    <span class="keyword">var</span> url = href;</span><br><span class="line">    <span class="keyword">var</span> filename = <span class="string">'test.zip'</span>;</span><br><span class="line">    a.href = url;</span><br><span class="line">    a.download = filename; <span class="comment">// 在没有download属性的情况，target="_blank"，仍会阻止打开</span></span><br><span class="line">    a.click();</span><br><span class="line">&#125;).catch(<span class="function"><span class="params">err</span> =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">// 处理异常</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>注意：<br>有些浏览器需要将a标签嵌入页面才可执行。</p>
+<h1 id="处理文件流"><a href="#处理文件流" class="headerlink" title="处理文件流"></a>处理文件流</h1><p>最后大概讲一下如果后端返回流怎么处理。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">funDownload</span>(<span class="params">content, filename</span>) </span>&#123;</span><br><span class="line">    <span class="comment">// 创建隐藏的可下载链接</span></span><br><span class="line">    <span class="keyword">var</span> link = <span class="built_in">document</span>.createElement(<span class="string">'a'</span>);</span><br><span class="line">    link.download = filename;</span><br><span class="line">    link.style.display = <span class="string">'none'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 字符内容转变成blob地址</span></span><br><span class="line">    <span class="keyword">var</span> blob = <span class="keyword">new</span> Blob([content]);</span><br><span class="line">    <span class="comment">//如果是excel格式</span></span><br><span class="line">    <span class="comment">//var blob = new Blob([content], &#123;type: 'application/vnd.ms-excel'&#125;),</span></span><br><span class="line">    link.href = URL.createObjectURL(blob);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 触发点击</span></span><br><span class="line">    <span class="built_in">document</span>.body.appendChild(link);</span><br><span class="line">    link.click();</span><br><span class="line">    <span class="comment">// 然后移除</span></span><br><span class="line">    <span class="built_in">document</span>.body.removeChild(link);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p><strong>URL.createObjectURL() </strong><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">静态方法会创建一个 </span></span><a href="https://developer.mozilla.org/zh-CN/docs/Web/API/DOMString" title="DOMString&nbsp;是一个UTF-16字符串。由于JavaScript已经使用了这样的字符串，所以DOMString 直接映射到 一个String。" target="_blank" rel="noopener">DOMString</a><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">，其中包含一个表示参数中给出的对象的URL。这个 URL 的生命周期和创建它的窗口中的 </span></span><a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Document" title="Document 接口提供了一些在浏览器服务中作为页面内容入口点而加载的一些页面，也就是 DOM 树。 DOM 树包括诸如 &lt;body&gt; 和 &lt;table&gt; 之类的元素，及其他元素。其也为文档（document）提供了全局性的函数，例如获取页面的 URL、在文档中创建新的 element&nbsp;的函数。" target="_blank" rel="noopener">document</a><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)"> </span></span>绑定。这个新的URL 对象表示指定的 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/File" title="文件(File)&nbsp;接口提供有关文件的信息，并允许网页中的 JavaScript 访问其内容。" target="_blank" rel="noopener">File</a><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)"> </span></span>对象或 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Blob" title="Blob&nbsp;对象表示不可变的类似文件对象的原始数据。Blob表示不一定是JavaScript原生形式的数据。File&nbsp;接口基于Blob，继承了 blob的功能并将其扩展使其支持用户系统上的文件。" target="_blank" rel="noopener">Blob</a><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)"> </span></span>对象。</p>
+<p>注意：<br><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">在每次调用 </span></span><code>createObjectURL()</code><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">方法时，都会创建一个新的 URL 对象，即使你已经用相同的对象作为参数创建过。当不再需要这些 URL 对象时，每个对象必须通过调用 </span></span><a href="https://developer.mozilla.org/zh-CN/docs/Web/API/URL/revokeObjectURL" title="URL.revokeObjectURL() 静态方法用来释放一个之前通过调用&nbsp;URL.createObjectURL() 创建的已经存在的 URL 对象。当你结束使用某个 URL 对象时，应该通过调用这个方法来让浏览器知道不再需要保持这个文件的引用了。" target="_blank" rel="noopener">URL.revokeObjectURL()</a><span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)"> </span></span>方法来释放。浏览器会在文档退出的时候自动释放它们，但是为了获得最佳性能和内存使用状况，你应该在安全的时机主动释放掉它们。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/javaScript/" rel="tag"># javaScript</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/06/javaScript tips——谈谈数组乱序/" rel="next" title="javaScript tips——谈谈数组乱序">
+                <i class="fa fa-chevron-left"></i> javaScript tips——谈谈数组乱序
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/09/06/V8-——-垃圾回收机制/" rel="prev" title="V8 —— 垃圾回收机制">
+                V8 —— 垃圾回收机制 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div class="ds-thread" data-thread-key="2018/09/06/javaScript tips——关于下载的二三事/"
+           data-title="JavaScript tips——关于下载的二三事" data-url="https://nanchenk.github.io/2018/09/06/javaScript tips——关于下载的二三事/">
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.gif"
+                alt="Nanchen" />
+            
+              <p class="site-author-name" itemprop="name">Nanchen</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:vincentlittleguy@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#浏览器的安全策略"><span class="nav-number">2.</span> <span class="nav-text">浏览器的安全策略</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#预开新标签页"><span class="nav-number">3.</span> <span class="nav-text">预开新标签页</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#做法"><span class="nav-number">3.1.</span> <span class="nav-text">做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缺点"><span class="nav-number">3.2.</span> <span class="nav-text">缺点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#生成iframe"><span class="nav-number">4.</span> <span class="nav-text">生成iframe</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#做法-1"><span class="nav-number">4.1.</span> <span class="nav-text">做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#缺点-1"><span class="nav-number">4.2.</span> <span class="nav-text">缺点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#生成标签"><span class="nav-number">4.3.</span> <span class="nav-text">生成标签</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#处理文件流"><span class="nav-number">5.</span> <span class="nav-text">处理文件流</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Nanchen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"ant"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

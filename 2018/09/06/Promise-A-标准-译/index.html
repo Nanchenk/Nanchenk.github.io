@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-cn">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="javaScript," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="TL;DR一个符合promise/A+规范的promise应该具备以下特征：  描述：  首先他是一个具有then方法的object或者function； 他只有三种状态，pending, fulfilled, rejected，只能是其中一种状态； pending变为fulfilled或者rejected后不能再转变为其他状态； fulfilled状态需要一个value作为异步操作的结果； re">
+<meta name="keywords" content="javaScript">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Promise A+ 标准(译)">
+<meta property="og:url" content="https://nanchenk.github.io/2018/09/06/Promise-A-标准-译/index.html">
+<meta property="og:site_name" content="噬己心以驽吾翼">
+<meta property="og:description" content="TL;DR一个符合promise/A+规范的promise应该具备以下特征：  描述：  首先他是一个具有then方法的object或者function； 他只有三种状态，pending, fulfilled, rejected，只能是其中一种状态； pending变为fulfilled或者rejected后不能再转变为其他状态； fulfilled状态需要一个value作为异步操作的结果； re">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2018-09-06T14:36:30.769Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Promise A+ 标准(译)">
+<meta name="twitter:description" content="TL;DR一个符合promise/A+规范的promise应该具备以下特征：  描述：  首先他是一个具有then方法的object或者function； 他只有三种状态，pending, fulfilled, rejected，只能是其中一种状态； pending变为fulfilled或者rejected后不能再转变为其他状态； fulfilled状态需要一个value作为异步操作的结果； re">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://nanchenk.github.io/2018/09/06/Promise-A-标准-译/"/>
+
+
+
+
+
+  <title>Promise A+ 标准(译) | 噬己心以驽吾翼</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-cn">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">噬己心以驽吾翼</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://nanchenk.github.io/2018/09/06/Promise-A-标准-译/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Nanchen">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="噬己心以驽吾翼">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Promise A+ 标准(译)</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-06T22:36:09+08:00">
+                2018-09-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/09/06/Promise-A-标准-译/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2018/09/06/Promise-A-标准-译/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="TL-DR"><a href="#TL-DR" class="headerlink" title="TL;DR"></a>TL;DR</h1><p>一个符合promise/A+规范的promise应该具备以下特征：</p>
+<ol>
+<li><p>描述：</p>
+<ol>
+<li>首先他是一个具有<span data-type="color" style="color:#FA8C16">then</span>方法的object或者function；</li>
+<li>他只有<span data-type="color" style="color:#FA8C16">三种状态</span>，pending, fulfilled, rejected，只能是其中一种状态；</li>
+<li>pending变为fulfilled或者rejected后不能再转变为其他状态；</li>
+<li>fulfilled状态需要一个value作为异步操作的结果；</li>
+<li>rejected状态需要一个reason作为拒绝的理由；</li>
+<li>具有reject与fulfill<span data-type="color" style="color:#FA8C16">两种行为</span>；</li>
+</ol>
+</li>
+<li><p>then：<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgba(0, 0, 0, 0.06)">promise.then(onFulfilled,onRejected)</span></span></p>
+<ol>
+<li>then方法接受<span data-type="color" style="color:#FA8C16">两个参数</span>： onFulfilled， onRejected;</li>
+<li>当状态变为fulfilled时，执行onFulfilled；</li>
+<li>当状态变为rejected时，执行onRejected；</li>
+<li>onFulfilled，onRejected都为可选参数，但是只能作为function运行；</li>
+<li>then可以被<span data-type="color" style="color:#FA8C16">调用多次</span>，但是一旦状态变为fulfilled/rejected，所有onFulfilled/onRejected必须按顺序执行；</li>
+<li><span data-type="color" style="color:#FA8C16">then必须返回promise</span>;</li>
+</ol>
+</li>
+<li><p>决议过程：<code>[[Resolve]](promise, x)</code></p>
+<ol>
+<li>promise与x不能具有相同的引用；</li>
+<li>如果x是promise, 则promise与x具有相同的状态,执行对应的动作；</li>
+<li>如果x是<span data-type="color" style="color:#FA8C16">复杂变量</span>（objec/function），尝试执行对应的then；</li>
+<li>如果x是<span data-type="color" style="color:#FA8C16">简单变量</span>，promise 变为fulfilled状态，返回x;</li>
+<li>无限递归地检测不是必需的，但是做的话要返回TypeError；</li>
+</ol>
+</li>
+</ol>
+<h1 id="翻译"><a href="#翻译" class="headerlink" title="翻译"></a>翻译</h1><blockquote>
+<p>An open standard for sound, interoperable JavaScript promises—by implementers, for implementers.</p>
+</blockquote>
+<hr>
+<p>一个可靠的，可交互的JavaScript promises的开放标准——由开发者自给自足</p>
+<blockquote>
+<p>A promise represents the eventual result of an asynchronous operation. The primary way of interacting with a promise is through its <code>then</code> method, which registers callbacks to receive either a promise’s eventual value or the reason why the promise cannot be fulfilled.</p>
+</blockquote>
+<hr>
+<p>promise表示一个异步操作的结果。使用的主要方式是通过then方法，他注册了回调函数去接受promise最后的结果或者没完成原因。</p>
+<blockquote>
+<p>This specification details the behavior of the <code>then</code> method, providing an interoperable base which all Promises/A+ conformant promise implementations can be depended on to provide. As such, the specification should be considered very stable. Although the Promises/A+ organization may occasionally revise this specification with minor backward-compatible changes to address newly-discovered corner cases, we will integrate large or backward-incompatible changes only after careful consideration, discussion, and testing.</p>
+</blockquote>
+<hr>
+<p>规范详细制定了then方法的行为，提供了一个所有符合Promises/A+的实现都可以依赖的基础。因此，这个规范应该可以说是非常稳定的。虽然Promises/A+组织有可能会修订这个标准，处理一些新发现的边界情况，但是这些改动都是向后兼容的，如果要整合一个大的或者不向后的兼容的修改，一定会经过小心的考虑与决定，并且会去测试。</p>
+<blockquote>
+<p>Historically, Promises/A+ clarifies the behavioral clauses of the earlier Promises/A proposal, extending it to cover de facto behaviors and omitting parts that are underspecified or problematic.</p>
+</blockquote>
+<hr>
+<p>从历史上看，Promises/A+ 澄清了Promises/A的提案，覆盖了约定俗成的行为，并且剔除了不足的或者有问题的部分。</p>
+<blockquote>
+<p>Finally, the core Promises/A+ specification does not deal with how to create, fulfill, or reject promises, choosing instead to focus on providing an interoperable <code>then</code> method. Future work in companion specifications may touch on these subjects.</p>
+</blockquote>
+<hr>
+<p>最后，Promises/A+规范的核心不是去描述如何去创建，完成，拒绝promises，而是专注于提供一个可操作的then方法。未来配套的规范会去定义他们。</p>
+<blockquote>
+<ol>
+<li><strong>Terminology</strong><br> 1.1. “promise” is an object or function with a <code>then</code> method whose behavior conforms to this specification.<br> 1.2. “thenable” is an object or function that defines a <code>then</code> method.<br> 1.3. “value” is any legal JavaScript value (including <code>undefined</code>, a thenable, or a promise).<br> 1.4. “exception” is a value that is thrown using the <code>throw</code> statement.<br> 1.5. “reason” is a value that indicates why a promise was rejected.</li>
+</ol>
+</blockquote>
+<hr>
+<ol>
+<li><strong>术语</strong><br>1.1. “promise” 是一个符合此规范的object或是function。<br>   1.2. “thenable” 是一个定义了then方法的object或者function。<br>   1.3. “value” 代表了一切合法的JavaScript值（包括undefined, thenable, 或者一个promise）。<br>   1.4. “exception” 代表了通过throw语句扔出的值。<br>   1.5. “reason” 说明了promise 为什么被 rejected了的值。</li>
+</ol>
+<blockquote>
+<ol start="2">
+<li><strong>Requirements</strong><br> 2.1. Promise States<br> A promise must be in one of three states: pending, fulfilled, or rejected.<br>2.1.1. When pending, a promise:<pre><code>2.1.1.1. may transition to either the fulfilled or rejected state.
+</code></pre>   2.1.2. When fulfilled, a promise:<pre><code>2.1.2.1. must not transition to any other state.
+2.1.2.2. must have a value, which must not change.
+</code></pre>   2.1.3. When rejected, a promise:<pre><code>2.1.3.1. must not transition to any other state.
+2.1.3.2. must have a reason, which must not change.
+</code></pre>Here, “must not change” means immutable identity (i.e. <code>===</code>), but does not imply deep immutability.</li>
+</ol>
+</blockquote>
+<hr>
+<ol start="2">
+<li><p><strong>要求</strong><br>2.1. promise的状态<br>   promise只能是<span data-type="color" style="color:#BFBFBF">pending</span>, <span data-type="color" style="color:#73D13D">fulfilled</span>, <span data-type="color" style="color:#FA8C16">rejected</span>三种状态中一种。</p>
+<p>   2.1.1. 如果处于<span data-type="color" style="color:#BFBFBF">pending</span>状态，promise:</p>
+<pre><code>2.1.1.1. 可以转化为&lt;span data-type=&quot;color&quot; style=&quot;color:#52C41A&quot;&gt;fulfilled&lt;/span&gt;状态或&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态。
+</code></pre><p>   2.1.2. 如果处于<span data-type="color" style="color:#52C41A">fulfilled</span>状态， promise:</p>
+<pre><code>2.1.2.1. 不能转化为其他的状态。
+2.1.2.2. 必须是不会变化的value。
+</code></pre><p>   2.1.3. 如果处于<span data-type="color" style="color:#FA8C16">rejected</span>状态，promise：</p>
+<pre><code>2.1.3.1. 不能变成其他的状态。
+2.1.3.2. 必须有一个不变的reason。
+</code></pre></li>
+</ol>
+<p>在这里，不变指的是完全不变，（可用===校验），但是不是属性不能变。</p>
+<blockquote>
+<pre><code>2.2. &lt;strong&gt;The &lt;/strong&gt;&lt;strong&gt;&lt;code&gt;then&lt;/code&gt;&lt;/strong&gt;&lt;strong&gt; Method&lt;/strong&gt;
+A promise must provide a `then` method to access its current or eventual value or reason.
+A promise’s `then` method accepts two arguments:
+</code></pre><p><code>promise.then(onFulfilled, onRejected)</code></p>
+<pre><code>2.2.1. Both `onFulfilled` and onRejected are optional arguments:
+      2.2.1.1. If onFulfilled is not a function, it must be ignored.
+      2.2.1.2. If onRejected is not a function, it must be ignored.
+
+2.2.2. If `onFulfilled` is a function:
+      2.2.2.1. it must be called after `promise` is fulfilled, with `promise’s` value as its first argument.
+      2.2.2.2. it must not be called before `promise` is fulfilled.
+      2.2.2.3. it must not be called more than once.
+
+2.2.3. If `onRejected` is a function,
+      2.2.3.1. it must be called after `promise` is rejected, with `promise’s` reason as its first argument.
+      2.2.3.2. it must not be called before `promise` is rejected.
+      2.2.3.3. it must not be called more than once.
+
+2.2.4. `onFulfilled` or `onRejected` must not be called until the execution context stack contains only platform code. [3.1].
+
+2.2.5. `onFulfilled` and `onRejected` must be called as functions (i.e. with no `this` value). [3.2]
+
+2.2.6. `then` may be called multiple times on the same promise.
+     2.2.6.1. If/when `promise` is fulfilled, all respective `onFulfilled` callbacks must execute in the order of their originating calls to `then`.
+     2.2.6.2. If/when `promise` is rejected, all respective `onRejected` callbacks must execute in the order of their originating calls to `then`.
+
+2.2.7. then must return a promise [3.3].
+         `promise2 = promise1.then(onFulfilled, onRejected);`
+     2.2.7.1. If either `onFulfilled` or `onRejected` returns a value `x`, run the Promise Resolution Procedure `[[Resolve]](promise2, x)`.
+     2.2.7.2. If either `onFulfilled` or `onRejected` throws an exception `e`, `promise2` must be rejected with `e` as the reason.
+     2.2.7.3. If `onFulfilled` is not a function and `promise1` is fulfilled, `promise2` must be fulfilled with the same value as `promise1`.
+     2.2.7.4. If `onRejected` is not a function and `promise1` is rejected, `promise2` must be rejected with the same reason as `promise1`.
+</code></pre></blockquote>
+<hr>
+<p>2.2.  <strong>then 方法</strong><br>一个promise必须提供<code>then</code>方法去访问当前或最终的value或者reason。<br>一个promise的<code>then</code>方法接受两个参数：<br><span data-type="color" style="color:rgb(34, 34, 34)"><code>promise.then(onFulfilled,onRejected)</code></span></p>
+<pre><code>2.2.1. 如果`onFulfilled`,`onRejected`都是可选参数：
+       2.2.1.1. 如果`onFulfilled`不是function，则必须忽略。
+       2.2.1.2. 如果`onRejected`不是function, 则必须忽略。
+
+2.2.2. 如果`onFulfilled`是function:
+       2.2.2.1. 必须在promise变成&lt;span data-type=&quot;color&quot; style=&quot;color:#73D13D&quot;&gt;fulfilled&lt;/span&gt;状态后被调用，value是调用时的第一个参数。
+       2.2.2.2. promise的状态没有变成&lt;span data-type=&quot;color&quot; style=&quot;color:#73D13D&quot;&gt;fulfilled&lt;/span&gt;时绝对不能调用。
+       2.2.2.3. 只能被调用一次。
+
+2.2.3. 如果`onRejected`是function:
+       2.2.3.1. 必须在promise变成&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态后被调用，reason是调用时的第一个参数。
+       2.2.3.2. promise的状态没有变成&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;时绝对不能调用。
+       2.2.3.3. 只能被调用一次。
+
+2.2.4. `onFulfilled`或`onRejected`只能在执行环境包含平台代码的情况下。[3.1]
+
+2.2.5. `onFulfilled`或`onRejected`只能作为function调用（不包含this）。[3.2]
+
+2.2.6. `then`可以被一个promise调用多次。
+       2.2.6.1. 当promise变成&lt;span data-type=&quot;color&quot; style=&quot;color:#73D13D&quot;&gt;fulfilled&lt;/span&gt;状态时，从一个`then`开始的所有`onFulfilled`方法必须按顺序执行。
+       2.2.6.2. 当promise变成&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态时，从一个`then`开始的所有`onRejected`方法必须按顺序执行。
+
+2.2.7. `then`方法必须返回一个promise。[3.3]
+         &lt;span data-type=&quot;color&quot; style=&quot;color:rgb(34, 34, 34)&quot;&gt;&lt;code&gt;promise2=promise1.then(onFulfilled,onRejected);&lt;/code&gt;&lt;/span&gt;
+       2.2.7.1. 如果`onFulfilled`或者`onRejected`返回了 value x, 执行Promise 决断过程
+                   `[[Resolve]](promise2, x)`
+       2.2.7.2. 如果`onFulfilled`或者`onRejected`返回了 exception e, promise2 必须变成&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态并且使用e作为reason。
+       2.2.7.3. 如果`onFulfilled`不是function并且promise1是&lt;span data-type=&quot;color&quot; style=&quot;color:#73D13D&quot;&gt;fulfilled&lt;/span&gt;状态，promise2必须变为&lt;span data-type=&quot;color&quot; style=&quot;color:#73D13D&quot;&gt;fulfilled&lt;/span&gt;状态，并且value与promise1相同。
+       2.2.7.4. 如果`onRejected`不是function并且promise1是&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态，promise2必须变为&lt;span data-type=&quot;color&quot; style=&quot;color:#FA8C16&quot;&gt;rejected&lt;/span&gt;状态，并且reason与promise1相同。
+</code></pre><blockquote>
+<pre><code>2.3. __The Promise Resolution Procedure__
+</code></pre><p>The promise resolution procedure is an abstract operation taking as input a promise and a value, which we denote as <code>[[Resolve]](promise, x)</code>. If <code>x</code> is a thenable, it attempts to make <code>promise</code> adopt the state of <code>x</code>, under the assumption that <code>x</code> behaves at least somewhat like a promise. Otherwise, it fulfills <code>promise</code> with the value <code>x</code>.<br>This treatment of thenables allows promise implementations to interoperate, as long as they expose a Promises/A+-compliant then method. It also allows Promises/A+ implementations to “assimilate” nonconformant implementations with reasonable then methods.<br>      To run <code>[[Resolve]](promise, x)</code>, perform the following steps:<br>      2.3.1. If <code>promise</code> and x refer to the same object, reject <code>promise</code> with a <code>TypeError</code> as the reason.</p>
+<pre><code>2.3.2. If `x` is a promise, adopt its state [3.4]:
+     2.3.2.1. If `x` is pending, promise must remain pending until `x` is fulfilled or rejected.
+     2.3.2.2. If/when `x` is fulfilled, fulfill `promise` with the same value.
+     2.3.2.3. If/when `x` is rejected, reject `promise` with the same reason.
+
+2.3.3. Otherwise, `if` x is an object or function,
+     2.3.3.1. Let `then` be x.`then`. [3.5]
+     2.3.3.2. If retrieving the property `x.then` results in a thrown exception `e`, reject `promise` with `e` as the reason.
+     2.3.3.3. If `then` is a function, call it with `x` as `this`, first argument `resolvePromise`, and second argument `rejectPromise`, where:
+           2.3.3.3.1. If/when `resolvePromise` is called with a value `y`, run `[[Resolve]](promise, y)`.
+           2.3.3.3.2. If/when `rejectPromise` is called with a reason `r`, reject `promise` with `r`.
+           2.3.3.3.3. If both `resolvePromise` and `rejectPromise` are called, or multiple calls to the same argument are made, the first call takes precedence, and any further calls are ignored.
+           2.3.3.3.4. If calling `then` throws an exception `e`,
+                2.3.3.3.4.1. If `resolvePromise` or `rejectPromise` have been called, ignore it.
+                2.3.3.3.4.2. Otherwise, reject `promise` with `e` as the reason.
+    2.3.3.4. If `then` is not a function, fulfill `promise` with `x`.
+
+2.3.4. If `x` is not an object or function, fulfill `promise` with `x`.
+</code></pre><p>If a promise is resolved with a thenable that participates in a circular thenable chain, such that the recursive nature of <code>[[Resolve]](promise, thenable)</code> eventually causes  <code>[[Resolve]](promise, thenable)</code> to be called again, following the above algorithm will lead to infinite</p>
+<p>recursion. Implementations are encouraged, but not required, to detect such recursion and reject <code>promise</code> with an informative <code>TypeError</code> as the reason. [3.6]</p>
+</blockquote>
+<hr>
+<p>2.3. Promise的决议过程<br>Promise的决议过程是一个抽象的运算， 输入为 一个promise与一个value值，形式如同<a href="promise, x">[Resolve]</a><br>如果x是thenable的（定义了<code>then</code>方法的object或者function），会尝试使用x的state作为promise的state，前提是x的行为至少像promise，否则，promise使用x去执行。</p>
+<p>这种对thenables(包含<code>then</code>方法的object或者function)的处理使得promise的实现变得更灵活， 只要暴露出符合Promises/A+ 的then方法即可。允许Promises/A+ 兼容不合规范的实现。</p>
+<p><a href="promise, x">[Resolve]</a>的执行过程如下：<br>2.3.1. 如果promise与x是同一个对象，promise使用TypeError作为reason进行reject。<br>2.3.2. 如果x是一个promise, 判断x的状态：[3.4]<br>       2.3.2.1. 如果x是<span data-type="color" style="color:#BFBFBF">pending</span>状态，promise也必须保持<span data-type="color" style="color:#BFBFBF">pending</span>状态，直到x变为<span data-type="color" style="color:#73D13D">fulfilled</span>或者<span data-type="color" style="color:#FA8C16">rejected</span>。<br>       2.3.2.2. 当x是<span data-type="color" style="color:#73D13D">fulfilled</span>状态，promise使用x的value进行fulfill。<br>       2.3.2.3. 当x是<span data-type="color" style="color:#FA8C16">rejected</span>状态，promise使用x的reason进行reject。</p>
+<p>2.3.3. 如果x不是promise，而是object或是function。<br>       2.3.3.1. 使用x.<code>then</code>作为promise的then。[3.5]<br>       2.3.3.2. 如果检索x的<code>then</code>属性出错e，promise使用e做为reason进行reject。<br>       2.3.3.3. 如果<code>then</code>是function，以x为作用域调用<code>then</code>, 像使用this一样，第一个参数是<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgb(255, 255, 255)">resolvePromise， 第二个参数是rejectPromise。</span></span><br>                 2.3.3.3.1. 如果<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgb(255, 255, 255)">resolvePromise以value y为参数被调用，则执行</span></span><a href="promise, y">[Resolve]</a>。<br>                 2.3.3.3.2. 如果<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgb(255, 255, 255)">resolvePromise以reason r为参数被调用，则用r为参数reject promise。</span></span><br>                 2.3.3.3.3. 如果<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgb(255, 255, 255)">resolvePromise和rejectPromise都被调用了，或者被同一个参数多次调用，优先执行第一次调用，其余的忽略。</span></span><br>                 2.3.3.3.4. 如果调用<code>then</code>时，扔出错误e。<br>                              2.3.3.3.4.1. 如果<span data-type="color" style="color:rgb(34, 34, 34)"><span data-type="background" style="background-color:rgb(255, 255, 255)">resolvePromise或者rejectPromise已经被调用，忽略他。</span></span><br>                              2.3.3.3.4.2. 否则，以e为reason进行reject。<br>       2.3.3.4. 如果<code>then</code>不是function，promise fulfill x。<br>2.3.4. 如果x不是object或者function，promise fulfill x。</p>
+<p>如果promise被一个由thenable组成的循环链resolved，那么promise的决策过程将执行决策过程，造成无限递归。鼓励提供对这种递归的检测并且用TypeError去reject promise，但是不是必须去实现。[3.6]</p>
+<blockquote>
+<ol start="3">
+<li><strong>Notes</strong><br> 3.1 Here “platform code” means engine, environment, and promise implementation code. In practice, this requirement ensures that <code>onFulfilled</code> and <code>onRejected</code> execute asynchronously, after the event loop turn in which <code>then</code> is called, and with a fresh stack. This can be implemented with either a “macro-task” mechanism such as <code>setTimeout</code> or <code>setImmediate</code>, or with a “micro-task” mechanism such as <code>MutationObserver</code> or <code>process.nextTick</code>. Since the promise implementation is considered platform code, it may itself contain a task-scheduling queue or “trampoline” in which the handlers are called.</li>
+</ol>
+</blockquote>
+<hr>
+<ol start="3">
+<li>附录<br>  3.1. 这里的“平台代码”指的是引擎，环境，promise 实现代码。实际上，要求确保onFulfilled和OnRejected异步执行，在<code>then</code>所在的事件轮询后被调用，并且在新的堆栈中。可以用setTimeout或者setImmediate之类的“宏任务”去实现。或者MutationObserver或者process.nextTick之类的“微任务”去实现。因为promise的实现被认为是平台代码，他可能包含自身任务队列。</li>
+</ol>
+<p>ps: 异步任务时，JS引擎会将任务划分至macrotask和microtask任务队列，执行一个macrotask的任务后，执行全部的microtask任务，直到所有任务执行完。</p>
+<blockquote>
+<pre><code>3.2. That is, in strict mode `this` will be `undefined` inside of them; in sloppy mode, it will be the global object.
+</code></pre></blockquote>
+<hr>
+<p>3.2. 也就是说，在严格模式下，this可能为undefined。在马虎模式下，它是全局对象。</p>
+<blockquote>
+<pre><code>3.3. Implementations may allow `promise2 === promise1`, provided the implementation meets all requirements. Each implementation should document whether it can produce `promise2 === promise1` and under what conditions.
+</code></pre></blockquote>
+<hr>
+<p>3.3. 如果实现所有要求，可能允许promise2 = promise1，但是每个实现上述规则的实例，都应该记录什么情况下才可以产生promise2 === promise1。</p>
+<blockquote>
+<pre><code>3.4. Generally, it will only be known that `x` is a true promise if it comes from the current implementation. This clause allows the use of implementation-specific means to adopt the state of known-conformant promises.
+</code></pre></blockquote>
+<hr>
+<p>3.4. 只有符合现有规范的才是真正的promise，该条文允许使用特定的实现方式的库接受符合已知promise的state</p>
+<blockquote>
+<pre><code>3.5  This procedure of first storing a reference to `x.then`, then testing that reference, and then calling that reference, avoids multiple accesses to the `x.then` property. Such precautions are important for ensuring consistency in the face of an accessor property, whose value could change between retrievals.
+</code></pre></blockquote>
+<hr>
+<p>3.5. 决议的过程会先缓存x.then的引用，然后test此引用，然后调用他，避免多次访问他。这种预防措施对确保访问属性的一致性非常重要，因为每次访问的值可能不一样。</p>
+<blockquote>
+<pre><code>3.6. Implementations should not set arbitrary limits on the depth of thenable chains, and assume that beyond that arbitrary limit the recursion will be infinite. Only true cycles should lead to a `TypeError`; if an infinite chain of distinct thenables is encountered, recursing forever is the correct behavior.
+</code></pre></blockquote>
+<hr>
+<p>3.6. 实现不应该设置thenable链的最大长度，不能假设超过了设置的最大长度就是无限循环的调用。因为只有真正无限递归的调用会扔出TypeError; 如果一个无限链上的每个thenable对象都不同，那他就应该无限调用下去。</p>
+<h1 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h1><p>看完了整个标准，只字没提catch这种方法，那么catch和then的区别是什么呢？<br>其实规范的2.2.1. 中说到了promise.then(onFulfilled,onRejected)中的参数适可选的，所以catch应该是then(undefined, onRejected)的一层封装。<br>老规矩，看规范吧~<br><a href="http://www.ecma-international.org/ecma-262/6.0/#sec-promise.prototype.catch" target="_blank" rel="noopener">Promise.prototype.catch</a></p>
+<blockquote>
+<p>When the <code>catch</code> method is called with argument onRejected the following steps are taken:</p>
+<ol>
+<li>Let <em>promise</em> be the <strong>this</strong> value.</li>
+<li>Return <a href="http://www.ecma-international.org/ecma-262/6.0/#sec-invoke" target="_blank" rel="noopener">Invoke</a>(<em>promise</em>, <code>&quot;then&quot;</code>, «‍<strong>undefined</strong>, <em>onRejected</em>»).</li>
+</ol>
+</blockquote>
+<p>哈，猜的八九不离十。<br>catch被调用的时候，其实还是执行了一次then，只不过更加语义化地去处理reason。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/javaScript/" rel="tag"># javaScript</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/06/V8-——-垃圾回收机制/" rel="next" title="V8 —— 垃圾回收机制">
+                <i class="fa fa-chevron-left"></i> V8 —— 垃圾回收机制
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div class="ds-thread" data-thread-key="2018/09/06/Promise-A-标准-译/"
+           data-title="Promise A+ 标准(译)" data-url="https://nanchenk.github.io/2018/09/06/Promise-A-标准-译/">
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.gif"
+                alt="Nanchen" />
+            
+              <p class="site-author-name" itemprop="name">Nanchen</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:vincentlittleguy@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TL-DR"><span class="nav-number">1.</span> <span class="nav-text">TL;DR</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#翻译"><span class="nav-number">2.</span> <span class="nav-text">翻译</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#思考"><span class="nav-number">3.</span> <span class="nav-text">思考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Nanchen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"ant"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

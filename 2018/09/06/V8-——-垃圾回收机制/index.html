@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-cn">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="bower," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言V8 blog近日发布了文章描述了“并发标记”的新技术，提升标记过程的效率。并发标记是一个主要用新的平行和并发的垃圾收集器替换旧的垃圾回收器的项目，现在Chrome 64和Node.js v10已经默认启用并发标记。讲解之前我们先回顾一下基本知识点。 基本概念弱分代假设（The Weak Generational Hypothesis） 多数对象的生命周期短 生命周期长的对象，一般是常驻对象V">
+<meta name="keywords" content="bower">
+<meta property="og:type" content="article">
+<meta property="og:title" content="V8 —— 垃圾回收机制">
+<meta property="og:url" content="https://nanchenk.github.io/2018/09/06/V8-——-垃圾回收机制/index.html">
+<meta property="og:site_name" content="噬己心以驽吾翼">
+<meta property="og:description" content="前言V8 blog近日发布了文章描述了“并发标记”的新技术，提升标记过程的效率。并发标记是一个主要用新的平行和并发的垃圾收集器替换旧的垃圾回收器的项目，现在Chrome 64和Node.js v10已经默认启用并发标记。讲解之前我们先回顾一下基本知识点。 基本概念弱分代假设（The Weak Generational Hypothesis） 多数对象的生命周期短 生命周期长的对象，一般是常驻对象V">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529048022543-3a770fc2-029b-4a33-b379-d454103d3890.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529048067558-30b87f25-00e8-44bf-8aa6-be7da34a6609.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/gif/93051/1529059110315-9b22551b-dbc7-46a1-ab81-f2b13592f067.gif">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529059214916-c14311fa-a628-48cd-bf9c-074f90d0786b.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529063345805-8ae9b56f-03ca-4d09-881d-6e843ddc9914.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529064967447-463c1056-21cf-49ed-a81c-03b6c2071041.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529059226036-371bc0b1-33e0-4b9b-8fb7-7568c893f1f3.png">
+<meta property="og:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529061105900-a09c17ae-2011-486f-bea5-a568c6a942e9.png">
+<meta property="og:updated_time" content="2018-09-06T14:35:47.949Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="V8 —— 垃圾回收机制">
+<meta name="twitter:description" content="前言V8 blog近日发布了文章描述了“并发标记”的新技术，提升标记过程的效率。并发标记是一个主要用新的平行和并发的垃圾收集器替换旧的垃圾回收器的项目，现在Chrome 64和Node.js v10已经默认启用并发标记。讲解之前我们先回顾一下基本知识点。 基本概念弱分代假设（The Weak Generational Hypothesis） 多数对象的生命周期短 生命周期长的对象，一般是常驻对象V">
+<meta name="twitter:image" content="https://cdn.yuque.com/lark/0/2018/png/93051/1529048022543-3a770fc2-029b-4a33-b379-d454103d3890.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://nanchenk.github.io/2018/09/06/V8-——-垃圾回收机制/"/>
+
+
+
+
+
+  <title>V8 —— 垃圾回收机制 | 噬己心以驽吾翼</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-cn">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">噬己心以驽吾翼</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://nanchenk.github.io/2018/09/06/V8-——-垃圾回收机制/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Nanchen">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="噬己心以驽吾翼">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">V8 —— 垃圾回收机制</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-06T22:35:04+08:00">
+                2018-09-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/09/06/V8-——-垃圾回收机制/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2018/09/06/V8-——-垃圾回收机制/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>V8 blog近日发布了文章描述了“并发标记”的新技术，提升标记过程的效率。<br>并发标记是一个主要用新的平行和并发的垃圾收集器替换旧的垃圾回收器的项目，现在Chrome 64和Node.js v10已经默认启用并发标记。讲解之前我们先回顾一下基本知识点。</p>
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="弱分代假设（The-Weak-Generational-Hypothesis）"><a href="#弱分代假设（The-Weak-Generational-Hypothesis）" class="headerlink" title="弱分代假设（The Weak Generational Hypothesis）"></a>弱分代假设（<span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">The Weak Generational Hypothesis</span></span>）</h3><ol>
+<li>多数对象的生命周期短</li>
+<li>生命周期长的对象，一般是常驻对象<br>V8的GC也是基于假设将对象分为两代： 新生代和老生代。<br>对不同的分代执行不同的算法可以更有效的执行垃圾回收。</li>
+</ol>
+<h3 id="新生代与老生代"><a href="#新生代与老生代" class="headerlink" title="新生代与老生代"></a>新生代与老生代</h3><p>新生代包括一个New Space，老生代包括： Old Space, Code Space和Map Space，Large Object Space。<br>64位环境下的V8引擎的新生代内存大小32MB、老生代内存大小为1400MB，而32位则减半，分别为16MB和700MB。<br>对于新生代的对象，采用空间换取时间的Scavenge算法， 尽可能快的回收内存。如果对象经历了2次GC还依然坚挺，就会在第二次回收时晋升为老生代（准确的说是保存在Old Space中）。<br>而老生代的GC采取Mark-Sweep的算法，并使用Mark-Sweep解决内存碎片的问题。</p>
+<h3 id="Scavenge算法"><a href="#Scavenge算法" class="headerlink" title="Scavenge算法"></a>Scavenge算法</h3><p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529048022543-3a770fc2-029b-4a33-b379-d454103d3890.png" alt="image.png | left | 747x409"></p>
+<p>对于新生代对象，采用Scavenge算法来回收。<br>简单来说，将内存的空间分为两个semispace，同一时刻只有一个空间处于使用中。<span data-type="color" style="color:rgb(51, 51, 51)"><span data-type="background" style="background-color:rgb(255, 255, 255)">使用中的叫做 to space，不被使用的叫做 from space。</span></span></p>
+<p>分配对象时，先在From空间分配，垃圾回收时检查（宽度优先）From空间的存活对象，将存活对象复制到To空间，清理非存活对象，复制后，空间身份发生对调。</p>
+<h3 id="Mark-Sweep算法"><a href="#Mark-Sweep算法" class="headerlink" title="Mark-Sweep算法"></a>Mark-Sweep算法</h3><p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529048067558-30b87f25-00e8-44bf-8aa6-be7da34a6609.png" alt="image.png | left | 747x399"></p>
+<p>处理老生代对象时，采用深度优先扫描，用三色标记的算法。<br>V8使用每个对象的两个mark-bits和一个标记工作栈来实现标记。<br>两个mark-bits编码三种颜色：白色（00），灰色（10）和黑色（11）。<br>白色表示对象可以回收，黑色表示对象不能回收，并且他的所有引用都被便利完毕了，灰色表示不可回收，他的引用对象没有扫描完毕。<br>扫描过程：</p>
+<p><img src="https://cdn.yuque.com/lark/0/2018/gif/93051/1529059110315-9b22551b-dbc7-46a1-ab81-f2b13592f067.gif" alt="Animation_of_tri-color_garbage_collection.gif | center | 330x276"></p>
+<ol>
+<li>从已知对象开始，即roots(<span data-type="color" style="color:rgb(44, 62, 80)"><span data-type="background" style="background-color:rgb(249, 249, 245)">全局对象和激活函数</span></span>), 将所有非root对象标记置为白色</li>
+<li>将root对象的所有直接引用对象入栈（marking worklist）</li>
+<li>依次pop出对象，出栈的对象标记为黑，同时将他的直接引用对象标记为灰色并push入栈</li>
+<li>栈空的时候，仍然为白色的对象可以回收</li>
+<li>回收白色的对象</li>
+</ol>
+<p>在清除阶段，只清除没被标记的对象。<br>但是进行清除后，内存会出现不连续的状态，对后续的大对象分配地址造成无意义的回收（因为可用内存的不足）,这时就需要Mark-Compact来处理内存碎片了。</p>
+<h3 id="Mark-Compact算法"><a href="#Mark-Compact算法" class="headerlink" title="Mark-Compact算法"></a>Mark-Compact算法</h3><p>在对象标记死亡后，在整理的过程中，将活着的对象向另一个内存页移动，移动完后内存页就可以还给操作系统，但如果这一页的活动对象被很多其他页的对象引用，就不会compact，因为移动完后更新其他引用的指针开销大。</p>
+<h3 id="全暂停与增量标记"><a href="#全暂停与增量标记" class="headerlink" title="全暂停与增量标记"></a>全暂停与增量标记</h3><p>垃圾回收的3种基本算法需要应用逻辑暂停下来，垃圾回收完后恢复应用程序逻辑，即“全暂停”，过长的停顿会让用户感到卡顿，所以为了降低全堆的垃圾回收，当堆的大小到一定程度后，开始增量GC，V8在标记阶段将标记的动作分为很多小“步进”，应用逻辑与垃圾回收交替进行直到标记阶段完成。<br>但是，对于过大的堆，GC在试图跟上应用程序分配速度的过程中，仍有长时间的停顿，并且应用程序需要通知GC对象图的所有变化，这些都是需要成本的（写保障 write-barrier）。</p>
+<p>V8使用Dijkstra-style 的写屏障（write-barrier）来实现通知。<br>当object.field = value in JavaScript时，V8会插入以下代码：<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Called after `object.field = value`.</span></span><br><span class="line">write_barrier(object, field_offset, value) &#123;</span><br><span class="line">  <span class="keyword">if</span> (color(object) == black &amp;&amp; color(value) == white) &#123;</span><br><span class="line">    set_color(value, grey);</span><br><span class="line">    marking_worklist.push(value);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>write-barrier可以保障不会出现黑色对象指向了白色对象的现象发生（强三色不变形 strong tri-color invariant），这样应用程序不会在GC时误删活动对象。在GC完成后所有白色对象都是可安全删除的。</p>
+<p>但是，由于write-barrier的损耗，降低了应用程序的吞吐量，所以需用其他的worker threads提高吞吐量，使worker threads也可以进行标记的工作。这就是下面要讲的平行标记和并发标记。</p>
+<h2 id="平行标记-parallel-marking"><a href="#平行标记-parallel-marking" class="headerlink" title="平行标记 parallel marking"></a>平行标记 parallel marking</h2><p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529059214916-c14311fa-a628-48cd-bf9c-074f90d0786b.png" alt="image.png | center | 640x129"></p>
+<p>平行标记期间，应用程序暂停，main thread和worker thread共同执行标记操作，下图<span data-type="color" style="color:rgb(37, 37, 37)">显示了平行标记所涉及的数据结构。箭头指示数据流的方向。</span></p>
+<p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529063345805-8ae9b56f-03ca-4d09-881d-6e843ddc9914.png" alt="image.png | center | 640x244"></p>
+<p>其中，对象图是只读的，不允许去修改他，Mark-bits和Marking worklist是可以读和写的。<br>Marking worklist负责决定分给其他worker thread的工作量，决定了性能与保持本地线程的均衡，所以如何高效地完成工作的分配至关重要。</p>
+<p>如下图所示，V8使用基于内存段的方式去平衡各个线程的工作量，避免线程同步的耗时与尽可能的工作。</p>
+<p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529064967447-463c1056-21cf-49ed-a81c-03b6c2071041.png" alt="image.png | left | 747x269"></p>
+<h2 id="并发标记-concurrent-marking"><a href="#并发标记-concurrent-marking" class="headerlink" title="并发标记 concurrent marking"></a>并发标记 concurrent marking</h2><h3 id=""><a href="#" class="headerlink" title=""></a><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529059226036-371bc0b1-33e0-4b9b-8fb7-7568c893f1f3.png" alt="image.png | center | 640x129"></h3><p>并发标记允许标记行为与应用程序同时进行。这就需要解决数据竞争的问题，比如JS代码在更改一个对象的字段，而worker thread又在标记字段，就可能导致错误的垃圾回收。<br>所以main thread需要与worker threads在发生数据竞争时进行同步，大多数的数据竞争行为通过轻量级的原子级内存访问就可以同步，但是一些特殊的场景需要独占整个对象的访问。</p>
+<h2 id="优化的结果"><a href="#优化的结果" class="headerlink" title="优化的结果"></a>优化的结果</h2><p><img src="https://cdn.yuque.com/lark/0/2018/png/93051/1529061105900-a09c17ae-2011-486f-bea5-a568c6a942e9.png" alt="image.png | center | 640x228"></p>
+<p>有了平行标记与并发标记后，对比上面讲的流程，GC的流程变为：</p>
+<ol>
+<li>从root对象开始扫描，填充对象到marking worklist</li>
+<li>分布并发标记任务到worker threads</li>
+<li>worker threads帮助main thread去更快地消费marking worklist中的对象</li>
+<li>main thread 偶尔会通过执行bailout worklist 和 marking worklist来marking</li>
+<li>一旦marking worklists为空，main thread 就完成GC行为</li>
+<li>在结束之前，main thread重新扫描roots，可能会发现其他的白色节点，这些白色节点会在worker threads的帮助下，被平行标记</li>
+</ol>
+<h2 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a>参考文献：</h2><ul>
+<li><a href="https://v8project.blogspot.com/2018/06/concurrent-marking.html" target="_blank" rel="noopener">Concurrent marking in V8</a></li>
+<li><a href="https://alinode.aliyun.com/blog/37" target="_blank" rel="noopener">解读 V8 GC Log</a></li>
+<li>思维导图：<a href="https://github.com/bailinlin/Awsome-Front-End-Xmind" target="_blank" rel="noopener">https://github.com/bailinlin/Awsome-Front-End-Xmind</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/bower/" rel="tag"># bower</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/06/javaScript tips——关于下载的二三事/" rel="next" title="JavaScript tips——关于下载的二三事">
+                <i class="fa fa-chevron-left"></i> JavaScript tips——关于下载的二三事
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/09/06/Promise-A-标准-译/" rel="prev" title="Promise A+ 标准(译)">
+                Promise A+ 标准(译) <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div class="ds-thread" data-thread-key="2018/09/06/V8-——-垃圾回收机制/"
+           data-title="V8 —— 垃圾回收机制" data-url="https://nanchenk.github.io/2018/09/06/V8-——-垃圾回收机制/">
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.gif"
+                alt="Nanchen" />
+            
+              <p class="site-author-name" itemprop="name">Nanchen</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:vincentlittleguy@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基本概念"><span class="nav-number">2.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#弱分代假设（The-Weak-Generational-Hypothesis）"><span class="nav-number">2.1.</span> <span class="nav-text">弱分代假设（The Weak Generational Hypothesis）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#新生代与老生代"><span class="nav-number">2.2.</span> <span class="nav-text">新生代与老生代</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scavenge算法"><span class="nav-number">2.3.</span> <span class="nav-text">Scavenge算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mark-Sweep算法"><span class="nav-number">2.4.</span> <span class="nav-text">Mark-Sweep算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mark-Compact算法"><span class="nav-number">2.5.</span> <span class="nav-text">Mark-Compact算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#全暂停与增量标记"><span class="nav-number">2.6.</span> <span class="nav-text">全暂停与增量标记</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#平行标记-parallel-marking"><span class="nav-number">3.</span> <span class="nav-text">平行标记 parallel marking</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#并发标记-concurrent-marking"><span class="nav-number">4.</span> <span class="nav-text">并发标记 concurrent marking</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#"><span class="nav-number">4.1.</span> <span class="nav-text"></span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化的结果"><span class="nav-number">5.</span> <span class="nav-text">优化的结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献："><span class="nav-number">6.</span> <span class="nav-text">参考文献：</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Nanchen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"ant"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
